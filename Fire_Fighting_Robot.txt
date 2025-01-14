@@ -1,0 +1,158 @@
+#define L1 14  //Left Motor MB2
+#define L2 12  //Left Motor MB1
+#define R1 27  //Right Motor MA1
+#define R2 26  //Right Motor MA2
+#define LS 13
+#define RS 25
+#define pump 15
+#define sensor 33
+
+unsigned long start_timer = 0;
+int new_max = 0;
+
+
+//*//
+
+
+int fire_value = 0;
+bool fire_detected = 0;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(L1, OUTPUT);
+  pinMode(L2, OUTPUT);
+  pinMode(R1, OUTPUT);
+  pinMode(R2, OUTPUT);
+  pinMode(pump, OUTPUT);
+  pinMode(sensor, INPUT);
+
+  analogWrite(LS, 0);
+  analogWrite(RS, 0);
+
+  // goStop();
+}
+
+
+void goForward() {
+
+  digitalWrite(L1, HIGH);
+  digitalWrite(L2, LOW);
+  digitalWrite(R1, HIGH);
+  digitalWrite(R2, LOW);
+
+  // analogWrite(LS, 0);
+  // analogWrite(RS, 0);
+  Serial.print("    F  ");
+  analogWrite(LS, 180);
+  analogWrite(RS, 180);
+}
+
+void goRight() {
+  digitalWrite(L1, HIGH);
+  digitalWrite(L2, LOW);
+  digitalWrite(R1, LOW);
+  digitalWrite(R2, HIGH);
+
+  //  Serial.println("    R");
+  // analogWrite(LS, 0);
+  // analogWrite(RS, 0);
+  analogWrite(LS, 160);
+  analogWrite(RS, 160);
+}
+
+
+void goLeft() {
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, HIGH);
+  digitalWrite(R1, HIGH);
+  digitalWrite(R2, LOW);
+
+  Serial.println("    L  ");
+  // analogWrite(LS, 0);
+  // analogWrite(RS, 0);
+
+  analogWrite(LS, 160);
+  analogWrite(RS, 160);
+}
+
+
+void goBackward() {
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, HIGH);
+  digitalWrite(R1, LOW);
+  digitalWrite(R2, HIGH);
+  analogWrite(LS, 160);
+  analogWrite(RS, 160);
+}
+
+void goStop() {
+  digitalWrite(L1, LOW);
+  digitalWrite(L2, LOW);
+  digitalWrite(R1, LOW);
+  digitalWrite(R2, LOW);
+  analogWrite(LS, 0);
+  analogWrite(RS, 0);
+}
+
+void loop() {
+
+  if (!fire_detected) goRight();
+  fire_value = analogRead(sensor);
+  Serial.println(fire_value);
+  if (fire_value > 500 && !fire_detected) {
+    goStop();
+    delay(500);
+    fire_detected = 1;
+    goForward();
+   
+  }
+  if (fire_value > 2000) {
+    goStop();
+    digitalWrite(pump, HIGH);
+    delay(1000);
+  }
+
+  if (fire_detected) {
+    start_timer = millis();
+    while (millis() - start_timer < 500) {
+      digitalWrite(L2, LOW);
+      digitalWrite(L1, HIGH);
+      analogWrite(LS, 150);
+      analogWrite(RS, 150);
+      fire_value = analogRead(sensor);
+      if (fire_value > 2000) {
+        goStop();
+        digitalWrite(pump, HIGH);
+        delay(1000);
+      } else digitalWrite(pump, LOW);
+    }
+    digitalWrite(L2, LOW);
+    digitalWrite(L1, LOW);
+
+    start_timer = millis();
+    while (millis() - start_timer < 500) {
+      digitalWrite(R2, LOW);
+      digitalWrite(R1, HIGH);
+      analogWrite(LS, 150);
+      analogWrite(RS, 150);
+
+      fire_value = analogRead(sensor);
+
+      if (fire_value > 2000) {
+        goStop();
+        digitalWrite(pump, HIGH);
+        delay(1000);
+      } else digitalWrite(pump, LOW);
+    }
+    digitalWrite(R2, LOW);
+    digitalWrite(R1, LOW);
+  }
+
+  fire_value = analogRead(sensor);
+  if (fire_value > 4000) {
+    goBackward();
+    delay(50);
+  }
+
+  delay(10);
+}
